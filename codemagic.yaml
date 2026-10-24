@@ -8,10 +8,15 @@ workflows:
       vars:
         THEOS: $HOME/theos
     scripts:
-      - name: Install Theos
+      - name: Install Dependencies
         script: |
           brew install make dpkg ldid
+      - name: Setup Theos
+        script: |
           git clone --recursive https://github.com/theos/theos.git $THEOS
+      - name: Copy SwiftProtobuf Framework
+        script: |
+          make copy-swiftprotobuf
       - name: Build Tweak
         script: |
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
