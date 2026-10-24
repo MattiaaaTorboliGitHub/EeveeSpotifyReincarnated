@@ -11,47 +11,30 @@ workflows:
       - name: Install Dependencies
         script: |
           brew install make dpkg ldid
-          
+
       - name: Setup Theos & SDKs
         script: |
-          # Clona Theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
-          
-          # Scarica e installa gli SDK iOS necessari per la compilazione
           curl -LO https://github.com/theos/sdks/archive/master.zip
           unzip -q master.zip
           mkdir -p $THEOS/sdks
           mv sdks-master/*.sdk $THEOS/sdks/
-          
-      - name: Download and Extract SwiftProtobuf Framework
+
+      - name: Build EeveeSwiftProtobuf Framework
         script: |
-          # Scarica il pacchetto .deb ufficiale che contiene il framework
-          curl -L -o swiftprotobuf.deb "https://github.com/whoeevee/EeveeSpotify/releases/download/swift2.0/org.swift.protobuf.swiftprotobuf_1.26.0_iphoneos-arm.deb"
-          
-          # Estrae il .deb
-          mkdir -p temp_extract
-          dpkg-deb -x swiftprotobuf.deb temp_extract
-          
-          # Trova il framework EeveeSwiftProtobuf e copialo nelle directory di Theos
-          FRAMEWORK_PATH=$(find temp_extract -type d -name 'EeveeSwiftProtobuf.framework' | head -1)
-          
-          if [ -z "$FRAMEWORK_PATH" ]; then
-            echo "Errore critico: framework non trovato nel .deb."
-            exit 1
+          chmod +x Tools/SwiftProtobufBuild/build-eeveeswiftprotobuf.sh
+          ./Tools/SwiftProtobufBuild/build-eeveeswiftprotobuf.sh
+          mkdir -p "$THEOS/lib/iphone/rootless"
+          # Lo script dovrebbe posizionare il framework automaticamente.
+          # Se fallisce, cerca il framework compilato e copialo manualmente.
+          if [ ! -d "$THEOS/lib/iphone/rootless/EeveeSwiftProtobuf.framework" ]; then
+            echo "Framework non trovato nella posizione standard. Cerco..."
+            find . -type d -name 'EeveeSwiftProtobuf.framework' -exec cp -r {} "$THEOS/lib/iphone/rootless/" \;
           fi
-          
-          echo "Framework trovato in: $FRAMEWORK_PATH"
-          
-          # Crea le cartelle necessarie e copia il framework per la build rootless
-          mkdir -p "$THEOS/vendor/lib"
-          mkdir -p "$THEOS/lib/iphone/rootless/Frameworks"
-          cp -r "$FRAMEWORK_PATH" "$THEOS/vendor/lib/"
-          cp -r "$FRAMEWORK_PATH" "$THEOS/lib/iphone/rootless/Frameworks/"
-          
+
       - name: Build Tweak
         script: |
-          # Compila il tweak per dispositivi moderni (rootless)
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          
+
     artifacts:
       - "packages/*.deb"
