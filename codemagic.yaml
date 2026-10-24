@@ -25,15 +25,19 @@ workflows:
           chmod +x Tools/SwiftProtobufBuild/build-eeveeswiftprotobuf.sh
           ./Tools/SwiftProtobufBuild/build-eeveeswiftprotobuf.sh
           mkdir -p "$THEOS/lib/iphone/rootless"
-          # Lo script dovrebbe posizionare il framework automaticamente.
-          # Se fallisce, cerca il framework compilato e copialo manualmente.
           if [ ! -d "$THEOS/lib/iphone/rootless/EeveeSwiftProtobuf.framework" ]; then
             echo "Framework non trovato nella posizione standard. Cerco..."
             find . -type d -name 'EeveeSwiftProtobuf.framework' -exec cp -r {} "$THEOS/lib/iphone/rootless/" \;
           fi
 
+      - name: Download Metal Toolchain
+        script: |
+          # Scarica il Metal Toolchain richiesto da Xcode 26+
+          xcodebuild -downloadComponent MetalToolchain
+
       - name: Build Tweak
         script: |
+          # Compila il tweak per dispositivi moderni (rootless)
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
 
     artifacts:
